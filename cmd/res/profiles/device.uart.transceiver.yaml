@@ -1,0 +1,25 @@
+name: "Uart-Transceiver-Device"
+manufacturer: "Jiangxing Intelligence"
+model: "SP-01"
+labels:
+- "device-uart-example"
+description: "Example of Device-Uart"
+
+deviceResources:
+-
+    name: "Query_EC20"
+    isHidden: false
+    description: "used to send hex buffer to EC20 4G module or receive response"
+    attributes: { tpye: "transceiver",  dev: "/dev/ttyUSB2", baud: 115200, timeout: 200}
+    properties:
+      valueType: "String"
+      readWrite: "RW"
+-
+    name: "Query_FT232"
+    isHidden: false
+    description: "used to send hex buffer to FT232(USB to serial UART interface) or receive response"
+    attributes: { tpye: "transceiver", dev: "/dev/ttyUSB4", baud: 9600, timeout: 200 }
+    properties:
+        valueType: "String"
+        readWrite: "RW"
+

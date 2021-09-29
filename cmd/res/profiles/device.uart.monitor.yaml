@@ -1,0 +1,16 @@
+name: "Uart-Monitor-Device"
+manufacturer: "Jiangxing Intelligence"
+model: "SP-01"
+labels:
+- "device-uart-example"
+description: "Example of Device-Uart"
+
+deviceResources:
+-
+    name: "Detect_FT232"
+    isHidden: false
+    description: "used to detect whether the FT232 uart device has data input"
+    attributes: { tpye: "monitor",  dev: "/dev/ttyUSB5", baud: 115200}
+    properties:
+        valueType: "String"
+        readWrite: "R"

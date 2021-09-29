@@ -1,20 +1,17 @@
 version: '3'
 
 services:
-  edgex-device-uart:
-    image: edgexfoundry/docker-device-uart-go:1.0.0-dev
-    ports:
-      - "49977:49977"
-    container_name: edgex-device-uart-go
-    hostname: edgex-device-uart-go
-    networks:
-      - edgex-network
+  edgex-device-ttyusb:
+    image: registry.jiangxingai.com:5000/edgex/device-service/ttyusb:arm64v8-cpu-0.0.1
+    container_name: edgex-device-ttyusb
+    hostname: edgex-device-ttyusb
     restart: always
+    command: --dp /dev/ttyUSB4 --baud 115200
     privileged: true
     volumes:
       - "/dev:/dev"
 
 networks:
-  edgex-network:
-    driver: "bridge"
-
+  default:
+    external:
+      name: edgex

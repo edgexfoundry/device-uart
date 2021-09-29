@@ -6,5 +6,5 @@
 
 package device
 
-// Global version for device-sdk-go
+// Global version
 var Version string = "to be replaced by makefile"
