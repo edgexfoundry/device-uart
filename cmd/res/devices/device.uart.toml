@@ -1,0 +1,19 @@
+# Pre-define Devices
+[[DeviceList]]
+  Name = "Uart-Monitor-Device"
+  ProfileName = "Uart-Monitor-Device"
+  Description = "Example of Device UART"
+  Labels = [ "device-uart-example" ]
+  [DeviceList.Protocols]
+    [DeviceList.Protocols.other]
+      Address = "device-uart-monitor-01"
+      Port = "300"
+[[DeviceList]]
+  Name = "Uart-Transceiver-Device"
+  ProfileName = "Uart-Transceiver-Device"
+  Description = "Example of Device UART"
+  Labels = [ "device-uart-example" ]
+  [DeviceList.Protocols]
+    [DeviceList.Protocols.other]
+      Address = "device-uart-transceiver-01"
+      Port = "300"
