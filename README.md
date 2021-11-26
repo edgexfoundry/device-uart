@@ -1,5 +1,7 @@
 # UART Device Service
 
+[![Build Status](https://jenkins.edgexfoundry.org/view/EdgeX%20Foundry%20Project/job/edgexfoundry/job/device-gpio/job/main/badge/icon)](https://jenkins.edgexfoundry.org/view/EdgeX%20Foundry%20Project/job/edgexfoundry/job/device-gpio/job/main/) [![Go Report Card](https://goreportcard.com/badge/github.com/edgexfoundry/device-gpio)](https://goreportcard.com/report/github.com/edgexfoundry/device-gpio) [![GitHub Latest Dev Tag)](https://img.shields.io/github/v/tag/edgexfoundry/device-gpio?include_prereleases&sort=semver&label=latest-dev)](https://github.com/edgexfoundry/device-gpio/tags) ![GitHub Latest Stable Tag)](https://img.shields.io/github/v/tag/edgexfoundry/device-gpio?sort=semver&label=latest-stable) [![GitHub License](https://img.shields.io/github/license/edgexfoundry/device-gpio)](https://choosealicense.com/licenses/apache-2.0/) ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/edgexfoundry/device-gpio) [![GitHub Pull Requests](https://img.shields.io/github/issues-pr-raw/edgexfoundry/device-gpio)](https://github.com/edgexfoundry/device-gpio/pulls) [![GitHub Contributors](https://img.shields.io/github/contributors/edgexfoundry/device-gpio)](https://github.com/edgexfoundry/device-gpio/contributors) [![GitHub Committers](https://img.shields.io/badge/team-committers-green)](https://github.com/orgs/edgexfoundry/teams/device-gpio-committers/members) [![GitHub Commit Activity](https://img.shields.io/github/commit-activity/m/edgexfoundry/device-gpio)](https://github.com/edgexfoundry/device-gpio/commits)
+
 ## Overview
 
 UART Micro Service - device service for connecting serial UART devices to EdgeX
@@ -16,6 +18,47 @@ UART Micro Service - device service for connecting serial UART devices to EdgeX
 - This Device Service runs with other EdgeX Core Services, such as Core Metadata, Core Data, and Core Command
 
 - The uart device service can contains many pre-defined devices which were defined by `res/devices/device.uart.toml` such as `Uart-Monitor-Device` and `Uart-Transceiver-Device`. These devices are created by the uart device service in core metadata when the service first initializes
+
+- Please confirm the following sensor information.
+
+  - Confirm the serial device path in system ( such as /dev/tty* or /dev/ttyUSB* ) corresponding to the real device.
+
+    ```shell
+    $ ls /dev/ttyUSB*
+    /dev/ttyUSB0  /dev/ttyUSB1  /dev/ttyUSB2  /dev/ttyUSB3  /dev/ttyUSB4  /dev/ttyUSB5
+
+    # EC20 4G module
+    $ udevadm info /dev/ttyUSB0 |grep ID_MODEL=
+    E: ID_MODEL=Android
+    $ udevadm info /dev/ttyUSB1 |grep ID_MODEL=
+    E: ID_MODEL=Android
+    $ udevadm info /dev/ttyUSB2 |grep ID_MODEL=
+    E: ID_MODEL=Android
+    $ udevadm info /dev/ttyUSB3 |grep ID_MODEL=
+    E: ID_MODEL=Android
+    $ udevadm info /dev/ttyUSB0 | grep ID_VENDOR_ID
+    E: ID_VENDOR_ID=2c7c
+    $ udevadm info /dev/ttyUSB0 | grep ID_MODEL_ID
+    E: ID_MODEL_ID=0125
+
+  # CP2102(USB to serial UART interface)
+    $ udevadm info /dev/ttyUSB4 |grep ID_MODEL=
+  E: ID_MODEL=CP2102_USB_to_UART_Bridge_Controller
+    $ udevadm info /dev/ttyUSB4 | grep ID_VENDOR_ID
+    E: ID_VENDOR_ID=10c4
+    $ udevadm info /dev/ttyUSB4 | grep ID_MODEL_ID
+    E: ID_MODEL_ID=ea60
+
+    # FT232(USB to serial UART interface)
+    $ udevadm info /dev/ttyUSB5 |grep ID_MODEL=
+    E: ID_MODEL=USB2.0-Serial
+    $ udevadm info /dev/ttyUSB5 | grep ID_VENDOR_ID
+    E: ID_VENDOR_ID=1a86
+    $ udevadm info /dev/ttyUSB5 | grep ID_MODEL_ID
+    E: ID_MODEL_ID=7523
+    ```
+
+  - Confirm the baud rate of the serial device ( such as 115200 or 9600 etc).
 
 - Two device profiles are now defined, they are `device.uart.monitor.yaml` and `device.uart.transceiver.yaml`
 
@@ -160,7 +203,6 @@ Use the `curl` response to get the command URLs (with device name and resource) 
 Assume we have a [FT232 (USB to serial UART interface)](https://www.amazon.com/DSD-TECH-Adapter-FT232RL-Compatible/dp/B07BBPX8B8/ref=sr_1_3?dchild=1&keywords=FT232&qid=1631620484&sr=8-3)  uart device connected to a usbhost on current system of raspberry pi 4b and it's serial UART interface connect to a computer via another FT232 uart device. Then we can send the string "12345" by computer to raspberry pi 4b.
 
 ```shell
-# Set the 'Power' gpio to high
 $ curl  http://localhost:59882/api/v2/device/name/Uart-Monitor-Device/Detect_FT232
 {"apiVersion":"v2","statusCode":200,"event":{"apiVersion":"v2","id":"226b833b-ef4a-4541-9e1b-9173414c04e5","deviceName":"Uart-Monitor-Device","profileName":"Uart-Monitor-Device","sourceName":"Detect_FT232","origin":1631620308488212373,"readings":[{"id":"63cb5c4e-c4ee-414e-a867-76cb9285d3e5","origin":1631620308488212373,"deviceName":"Uart-Monitor-Device","resourceName":"Detect_FT232","profileName":"Uart-Monitor-Device","valueType":"String","binaryValue":null,"mediaType":"","value":"3132333435"}]}}
 ```
@@ -223,7 +265,7 @@ Add the `device-uart` to the docker-compose.yml of edgex foundry 2.0-Ireland.
     networks:
       edgex-network: {}
     ports:
-    - 49995:49995/tcp
+    - 59911:59911/tcp
     read_only: false
     privileged: true
     volumes:

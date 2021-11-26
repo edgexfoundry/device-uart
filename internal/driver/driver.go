@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"encoding/hex"
 	"errors"
+	"sync"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -29,6 +30,7 @@ type Driver struct {
 	asyncCh chan<- *dsModels.AsyncValues
 	monitor map[string]*UartMonitor
 	transceiver map[string]*UartTransceiver
+	locker         sync.Mutex
 }
 
 
@@ -48,7 +50,9 @@ func (s *Driver) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.As
 // HandleReadCommands triggers a protocol Read operation for the specified device.
 func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
 
-	s.lc.Info(fmt.Sprintf("protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes))
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	s.lc.Infof(fmt.Sprintf("protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes))
 
 	if len(reqs) == 1 {
 		res = make([]*dsModels.CommandValue, 1)
@@ -99,10 +103,12 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
 // command.
 func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []dsModels.CommandRequest,
 	params []*dsModels.CommandValue) error {
-	s.lc.Info(fmt.Sprintf("Driver.HandleWriteCommands: protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes, params))
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands: protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes, params))
 
 	for i, r := range reqs {
-		s.lc.Info(r.DeviceResourceName)
+		s.lc.Infof(r.DeviceResourceName)
 		key_type_value := fmt.Sprintf("%v", reqs[0].Attributes["tpye"])
 		if key_type_value == "transceiver" {
 			if value, err := params[i].StringValue(); err == nil {
@@ -131,6 +137,7 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 		}
 
 	}
+
 	return nil
 }
 
@@ -141,7 +148,12 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 func (s *Driver) Stop(force bool) error {
 	// Then Logging Client might not be initialized
 	if s.lc != nil {
-		s.lc.Debug(fmt.Sprintf("Driver.Stop called: force=%v", force))
+		s.lc.Debugf(fmt.Sprintf("Driver.Stop called: force=%v", force))
+	}
+	for k, _ := range s.monitor  {
+		if s.monitor[k].rxstatus == true {
+			s.monitor[k].Stop_Listen()
+		}
 	}
 	return nil
 }
@@ -149,21 +161,30 @@ func (s *Driver) Stop(force bool) error {
 // AddDevice is a callback function that is invoked
 // when a new Device associated with this Device Service is added
 func (s *Driver) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
-	s.lc.Debug(fmt.Sprintf("a new Device is added: %s", deviceName))
+	s.lc.Debugf(fmt.Sprintf("a new Device is added: %s", deviceName))
 	return nil
 }
 
 // UpdateDevice is a callback function that is invoked
 // when a Device associated with this Device Service is updated
 func (s *Driver) UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
-	s.lc.Debug(fmt.Sprintf("Device %s is updated", deviceName))
+	s.lc.Debugf(fmt.Sprintf("Device %s is updated", deviceName))
+	for k, _ := range s.monitor  {
+		if s.monitor[k].rxstatus == true {
+			s.monitor[k].Stop_Listen()
+		}
+	}
 	return nil
 }
 
 // RemoveDevice is a callback function that is invoked
 // when a Device associated with this Device Service is removed
 func (s *Driver) RemoveDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
-	s.lc.Debug(fmt.Sprintf("Device %s is removed", deviceName))
+	s.lc.Debugf(fmt.Sprintf("Device %s is removed", deviceName))
+	for k, _ := range s.monitor  {
+		if s.monitor[k].rxstatus == true {
+			s.monitor[k].Stop_Listen()
+		}
+	}
 	return nil
 }
-

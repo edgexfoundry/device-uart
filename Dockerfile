@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-ARG BASE=golang:1.16-alpine3.14
+ARG BASE=golang:1.16-alpine3.12
 FROM ${BASE} AS builder
 
 ARG ALPINE_PKG_BASE="make git openssh-client gcc libc-dev zeromq-dev libsodium-dev"
@@ -40,7 +40,7 @@ RUN go mod download
 ARG MAKE='make build'
 RUN ${MAKE}
 
-FROM alpine:3.14
+FROM alpine:3.12
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2021: Jiangxing Intelligence'
@@ -53,7 +53,7 @@ COPY --from=builder /device-uart/Attribution.txt /
 COPY --from=builder /device-uart/LICENSE /
 COPY --from=builder /device-uart/cmd/ /
 
-EXPOSE 49995
+EXPOSE 59911
 
 ENTRYPOINT ["/device-uart"]
 CMD ["-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"]
