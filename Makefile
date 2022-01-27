@@ -7,7 +7,7 @@ MICROSERVICES=cmd/device-uart
 
 .PHONY: $(MICROSERVICES)
 
-DOCKERS=docker_device_uart_go
+DOCKERS=docker_device_uart
 .PHONY: $(DOCKERS)
 
 VERSION=$(shell cat ./VERSION 2>/dev/null || echo 0.0.0)
