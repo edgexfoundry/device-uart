@@ -52,7 +52,7 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
 
 	s.locker.Lock()
 	defer s.locker.Unlock()
-	s.lc.Infof(fmt.Sprintf("protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes))
+	s.lc.Infof("protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes)
 
 	if len(reqs) == 1 {
 		res = make([]*dsModels.CommandValue, 1)
@@ -105,7 +105,7 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 	params []*dsModels.CommandValue) error {
 	s.locker.Lock()
 	defer s.locker.Unlock()
-	s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands: protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes, params))
+	s.lc.Infof("Driver.HandleWriteCommands: protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes, params)
 
 	for i, r := range reqs {
 		s.lc.Infof(r.DeviceResourceName)

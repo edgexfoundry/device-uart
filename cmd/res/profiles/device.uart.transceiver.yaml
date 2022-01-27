@@ -10,7 +10,7 @@ deviceResources:
     name: "Query_EC20"
     isHidden: false
     description: "used to send hex buffer to EC20 4G module or receive response"
-    attributes: { tpye: "transceiver",  dev: "/dev/ttyUSB2", baud: 115200, timeout: 200}
+    attributes: { type: "transceiver",  dev: "/dev/ttyUSB2", baud: 115200, timeout: 200}
     properties:
       valueType: "String"
       readWrite: "RW"
@@ -18,7 +18,7 @@ deviceResources:
     name: "Query_FT232"
     isHidden: false
     description: "used to send hex buffer to FT232(USB to serial UART interface) or receive response"
-    attributes: { tpye: "transceiver", dev: "/dev/ttyUSB4", baud: 9600, timeout: 200 }
+    attributes: { type: "transceiver", dev: "/dev/ttyUSB4", baud: 9600, timeout: 200 }
     properties:
         valueType: "String"
         readWrite: "RW"

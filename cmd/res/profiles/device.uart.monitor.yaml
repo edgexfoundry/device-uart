@@ -10,7 +10,7 @@ deviceResources:
     name: "Detect_FT232"
     isHidden: false
     description: "used to detect whether the FT232 uart device has data input"
-    attributes: { tpye: "monitor",  dev: "/dev/ttyUSB5", baud: 115200}
+    attributes: { type: "monitor",  dev: "/dev/ttyUSB5", baud: 115200}
     properties:
         valueType: "String"
         readWrite: "R"

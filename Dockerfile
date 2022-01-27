@@ -45,8 +45,8 @@ FROM alpine:3.12
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2021: Jiangxing Intelligence'
 
-RUN sed -e 's/dl-cdn[.]alpinelinux.org/nl.alpinelinux.org/g' -i~ /etc/apk/repositories
-RUN apk add --update --no-cache zeromq
+# dumb-init needed for injected secure bootstrapping entry point script when run in secure mode.
+RUN apk add --update --no-cache zeromq dumb-init
 
 WORKDIR /
 COPY --from=builder /device-uart/Attribution.txt /
