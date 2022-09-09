@@ -1,0 +1,31 @@
+name: "Uart-Generic-Device"
+manufacturer: "edgex"
+model: "edgex-uart"
+labels:
+- "device-uart-example"
+description: "Example of Device-Uart"
+
+deviceResources:
+-
+    name: "Read_UART"
+    isHidden: false
+    description: "used to read from the UART device"
+    attributes: { type: "generic",  dev: "/dev/ttyAMA1", baud: 115200, maxbytes: 160, timeout: 1}
+    properties:
+        valueType: "String"
+        readWrite: "R"
+-
+    name: "Write_UART"
+    isHidden: false
+    description: "used to write to the UART device"
+    attributes: { type: "generic",  dev: "/dev/ttyAMA1", baud: 115200, timeout: 1}
+    properties:
+        valueType: "String"
+        readWrite: "W"
+
+deviceCommands:
+-
+  name: "Read_Cmd"
+  readWrite: "R"
+  resourceOperations:
+  - { deviceResource: "Read_UART" }

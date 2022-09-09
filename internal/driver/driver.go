@@ -12,85 +12,77 @@
 package driver
 
 import (
-	"fmt"
-	"time"
-	"strconv"
-	"encoding/hex"
-	"errors"
+    "fmt"
+    "strconv"
+    "encoding/hex"
 
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+    dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+    "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+    "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+    "github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 )
 
 type Driver struct {
-	lc      logger.LoggingClient
-	asyncCh chan<- *dsModels.AsyncValues
-	monitor map[string]*UartMonitor
-	transceiver map[string]*UartTransceiver
+    lc      logger.LoggingClient
+    asyncCh chan<- *dsModels.AsyncValues
+    generic map[string]*UartGeneric
 }
 
 
 
 // Initialize performs protocol-specific initialization for the device
 // service.
-func (s *Driver) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.AsyncValues, deviceCh chan<- []dsModels.DiscoveredDevice) error {
-	s.lc = lc
-	s.asyncCh = asyncCh
+func (s *Driver) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.AsyncValues, deviceCh chan<- []dsModels.DiscoveredDevice) (error) {
+    s.lc = lc
+    s.asyncCh = asyncCh
 
-	s.monitor = make(map[string]*UartMonitor)
-	s.transceiver = make(map[string]*UartTransceiver)
+    s.generic = make(map[string]*UartGeneric)
 
-	return nil
+    return nil
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
 func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
+	
+	res = make([]*dsModels.CommandValue, len(reqs))
 
-	s.lc.Info(fmt.Sprintf("protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes))
+    for i, req := range reqs {
+        s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): protocols: %v resource: %v attributes: %v", protocols, req.DeviceResourceName, req.Attributes))
+		
+        key_type_value := fmt.Sprintf("%v", req.Attributes["type"])
+		
+        if key_type_value == "generic" {
+            key_dev_value := fmt.Sprintf("%v", req.Attributes["dev"])
+            key_baud_value, _ := strconv.Atoi(fmt.Sprintf("%v", req.Attributes["baud"]))
+            key_maxbytes_value, _ := strconv.Atoi(fmt.Sprintf("%v", req.Attributes["maxbytes"]))
+            key_timeout_value, _ := strconv.Atoi(fmt.Sprintf("%v", req.Attributes["timeout"]))
 
-	if len(reqs) == 1 {
-		res = make([]*dsModels.CommandValue, 1)
-		key_type_value := fmt.Sprintf("%v", reqs[0].Attributes["tpye"])
-		if key_type_value == "transceiver" {
-			key_dev_value := fmt.Sprintf("%v", reqs[0].Attributes["dev"])
-			if _, ok := s.transceiver[key_dev_value]; ok == false {
-				s.transceiver[key_dev_value] = NewUartTransceiver()
-				s.transceiver[key_dev_value].rxbuf = nil
-				s.transceiver[key_dev_value].rxlen = 0
-			}
-			rxbuf := hex.EncodeToString(s.transceiver[key_dev_value].rxbuf)
-			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeString, rxbuf)
-			s.transceiver[key_dev_value].rxbuf = nil
-			s.transceiver[key_dev_value].rxlen = 0
-			res[0] = cv
-		} else if key_type_value == "monitor" {
-			key_dev_value := fmt.Sprintf("%v", reqs[0].Attributes["dev"])
-			key_baud_value, _ := strconv.Atoi(fmt.Sprintf("%v", reqs[0].Attributes["baud"]))
-			if _, ok := s.monitor[key_dev_value]; ok {
-				if s.monitor[key_dev_value].rxstatus == false {
-					go s.monitor[key_dev_value].Start_Listen()
-					time.Sleep(100 * time.Millisecond)
-				}
-			} else {
-				s.monitor[key_dev_value] = NewUartMonitor(key_dev_value, key_baud_value)
-				go s.monitor[key_dev_value].Start_Listen()
-				time.Sleep(100 * time.Millisecond)
-			}
+            // check device is already initialized
+            if _, ok := s.generic[key_dev_value]; ok {
+                s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Device %v is already initialized", s.generic[key_dev_value]))
+            } else {
+                // initialize device for the first time
+                s.generic[key_dev_value] = NewUartGeneric(key_dev_value, key_baud_value, key_timeout_value)
+                s.generic[key_dev_value].rxbuf = nil
 
-			if s.monitor[key_dev_value].rxstatus {
-				rxbuf := hex.EncodeToString(s.monitor[key_dev_value].rxbuf)
-				cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeString, rxbuf)
-				s.monitor[key_dev_value].rxbuf = nil
-				res[0] = cv
-			} else {
-				return nil, errors.New("[error]: Open serial fail")
-			}
-		}
-	}
+                s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Device %v initialized for the first time", s.generic[key_dev_value]))
+            }
+            
+			// Call the UART read function
+			s.generic[key_dev_value].GenericUartRead(key_maxbytes_value)
 
-	return res, nil
+            rxbuf := hex.EncodeToString(s.generic[key_dev_value].rxbuf)
+            s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Received Data =  %s", rxbuf))
+			
+			// Pass the received values to higher layers
+            cv, _ := dsModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeString, rxbuf)
+            s.generic[key_dev_value].rxbuf = nil
+            res[i] = cv
+            s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Response = %v", res[i]))
+        }
+    }
+
+    return res, nil
 }
 
 // HandleWriteCommands passes a slice of CommandRequest struct each representing
@@ -98,40 +90,46 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
 // Since the commands are actuation commands, params provide parameters for the individual
 // command.
 func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []dsModels.CommandRequest,
-	params []*dsModels.CommandValue) error {
-	s.lc.Info(fmt.Sprintf("Driver.HandleWriteCommands: protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes, params))
+    params []*dsModels.CommandValue) error {
 
-	for i, r := range reqs {
-		s.lc.Info(r.DeviceResourceName)
-		key_type_value := fmt.Sprintf("%v", reqs[0].Attributes["tpye"])
-		if key_type_value == "transceiver" {
-			if value, err := params[i].StringValue(); err == nil {
-				key_dev_value := fmt.Sprintf("%v", reqs[0].Attributes["dev"])
-				key_baud_value, _ := strconv.Atoi(fmt.Sprintf("%v", reqs[0].Attributes["baud"]))
-				key_timeout_value, _ := strconv.Atoi(fmt.Sprintf("%v", reqs[0].Attributes["timeout"]))
-				if _, ok := s.transceiver[key_dev_value]; ok == false {
-					s.transceiver[key_dev_value] = NewUartTransceiver()
-					s.transceiver[key_dev_value].rxbuf = nil
-					s.transceiver[key_dev_value].rxlen = 0
-				}
-				txbuf, err := hex.DecodeString(value)
-				if err != nil {
-					return err
-				}
-				s.transceiver[key_dev_value].rxbuf, s.transceiver[key_dev_value].rxlen, err = uart_transceiver(key_dev_value, key_baud_value, key_timeout_value, txbuf)
-				if err == nil {
-					if s.transceiver[key_dev_value].rxlen == 0 {
-						return errors.New("[log]: No response")
-					}
-				}
-				return err
-			} else {
-				return err
-			}
-		}
+    for i, req := range reqs {
+        s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): deviceResourceName = %v", req.DeviceResourceName))
+		s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, req.DeviceResourceName, req.Attributes, params))
+		
+        key_type_value := fmt.Sprintf("%v", req.Attributes["type"])
+		
+        if key_type_value == "generic" {
+            if value, err := params[i].StringValue(); err == nil {
+                key_dev_value := fmt.Sprintf("%v", req.Attributes["dev"])
+                key_baud_value, _ := strconv.Atoi(fmt.Sprintf("%v", req.Attributes["baud"]))
+                key_timeout_value, _ := strconv.Atoi(fmt.Sprintf("%v", req.Attributes["timeout"]))
 
-	}
-	return nil
+                // initialize the device if it is not initialized already
+                if _, ok := s.generic[key_dev_value]; ok == false {
+                    s.generic[key_dev_value] = NewUartGeneric(key_dev_value, key_baud_value, key_timeout_value)
+                }
+			    
+                // decode the string in hex format
+                txbuf, err := hex.DecodeString(value)
+                if err != nil {
+                    return err
+                }
+			    
+			    //Write to UART device
+                txlen, err :=s.generic[key_dev_value].GenericUartWrite(txbuf)
+			    
+                if err == nil {
+                    s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): tx length = %v", txlen))
+                }
+
+                return err
+            } else {
+                return err
+            }
+        }
+    }
+    s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): return nil"))
+    return nil
 }
 
 // Stop the protocol-specific DS code to shutdown gracefully, or
@@ -139,31 +137,31 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 // for closing any in-use channels, including the channel used to send async
 // readings (if supported).
 func (s *Driver) Stop(force bool) error {
-	// Then Logging Client might not be initialized
-	if s.lc != nil {
-		s.lc.Debug(fmt.Sprintf("Driver.Stop called: force=%v", force))
-	}
-	return nil
+    // Then Logging Client might not be initialized
+    if s.lc != nil {
+        s.lc.Debugf(fmt.Sprintf("Driver.Stop called: force=%v", force))
+    }
+    return nil
 }
 
 // AddDevice is a callback function that is invoked
 // when a new Device associated with this Device Service is added
 func (s *Driver) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
-	s.lc.Debug(fmt.Sprintf("a new Device is added: %s", deviceName))
-	return nil
+    s.lc.Debugf(fmt.Sprintf("a new Device is added: %s", deviceName))
+    return nil
 }
 
 // UpdateDevice is a callback function that is invoked
 // when a Device associated with this Device Service is updated
 func (s *Driver) UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
-	s.lc.Debug(fmt.Sprintf("Device %s is updated", deviceName))
-	return nil
+    s.lc.Debugf(fmt.Sprintf("Device %s is updated", deviceName))
+    return nil
 }
 
 // RemoveDevice is a callback function that is invoked
 // when a Device associated with this Device Service is removed
 func (s *Driver) RemoveDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
-	s.lc.Debug(fmt.Sprintf("Device %s is removed", deviceName))
-	return nil
+    s.lc.Debugf(fmt.Sprintf("Device %s is removed", deviceName))
+    return nil
 }
 
