@@ -16,7 +16,6 @@
 .idea/
 vendor/
 cmd/device-uart
-go.sum
 
 # snap files
 *.snap

@@ -7,7 +7,7 @@ MICROSERVICES=cmd/device-uart
 
 .PHONY: $(MICROSERVICES)
 
-DOCKERS=docker_device_uart_go
+DOCKERS=docker_device_uart
 .PHONY: $(DOCKERS)
 
 VERSION=$(shell cat ./VERSION 2>/dev/null || echo 0.0.0)
@@ -16,27 +16,29 @@ GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-uart.Version=$(VERSION)"
 
 build: $(MICROSERVICES)
 
-cmd/device-uart:
+tidy:
 	go mod tidy
+
+cmd/device-uart:
 	$(GOCGO) build $(GOFLAGS) -o $@ ./cmd
 
 test:
-	go mod tidy
 	$(GOCGO) test ./... -coverprofile=coverage.out
 	$(GOCGO) vet ./...
-	gofmt -l .
-	[ "`gofmt -l .`" = "" ]
+	gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")
+	[ "`gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")`" = "" ]
 	./bin/test-attribution-txt.sh
-	./bin/test-go-mod-tidy.sh
-
 clean:
 	rm -f $(MICROSERVICES)
 
 docker: $(DOCKERS)
 
-docker_device_uart_go:
+docker_device_uart:
 	docker build \
 		--label "git_sha=$(GIT_SHA)" \
 		-t edgexfoundry/device-uart:$(GIT_SHA) \
 		-t edgexfoundry/device-uart:$(VERSION)-dev \
 		.
+
+vendor:
+	$(GO) mod vendor
