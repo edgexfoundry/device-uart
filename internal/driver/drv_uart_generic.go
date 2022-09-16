@@ -1,12 +1,22 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2021 Jiangxing Intelligence Ltd
+// Copyright (C) 2022 HCL Technologies Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
 // Package driver this package provides an UART implementation of
 // ProtocolDriver interface.
 //
+// CONTRIBUTORS              COMPANY
+//===============================================================
+// 1. Sathya Durai           HCL Technologies
+// 2. Sudhamani Bijivemula   HCL Technologies
+// 3. Vediyappan Villali     HCL Technologies
+// 4. Vijay Annamalaisamy    HCL Technologies
+//
+//
+
 package driver
 
 import (

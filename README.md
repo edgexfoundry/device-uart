@@ -7,7 +7,7 @@ UART device Service - This device service is used to connect serial UART devices
 - Function:
   - This device service is used for universal serial device, such as USB to TTL serial, rs232 or rs485 interface device. It provides REST API interfaces to communicate with serial device
 - This device service **ONLY works on Linux system**
-- This device service is contributed by [Jiangxing Intelligence](https://www.jiangxingai.com)
+- This device service is contributed by [Jiangxing Intelligence](https://www.jiangxingai.com) and HCL Technologies(EPL Team)
 
 ## Usage
 

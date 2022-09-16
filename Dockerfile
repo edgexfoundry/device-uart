@@ -56,7 +56,7 @@ COPY --from=builder /device-uart/Attribution.txt /
 COPY --from=builder /device-uart/LICENSE /
 COPY --from=builder /device-uart/cmd/ /
 
-EXPOSE 59911
+EXPOSE 59995
 
 ENTRYPOINT ["/device-uart"]
 CMD ["-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"]
