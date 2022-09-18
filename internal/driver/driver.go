@@ -64,9 +64,9 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
         if key_type_value == "generic" {
             key_dev_value := fmt.Sprintf("%v", req.Attributes["dev"])
 
-            key_baud_value, _ := cast.ToIntE(fmt.Sprintf("%v", req.Attributes["baud"]))
-            key_maxbytes_value, _ := cast.ToIntE(fmt.Sprintf("%v", req.Attributes["maxbytes"]))
-            key_timeout_value, _  := cast.ToIntE(fmt.Sprintf("%v", req.Attributes["timeout"]))
+            key_baud_value, _ := cast.ToIntE(req.Attributes["baud"])
+            key_maxbytes_value, _ := cast.ToIntE(req.Attributes["maxbytes"])
+            key_timeout_value, _  := cast.ToIntE(req.Attributes["timeout"])
 
             // check device is already initialized
             if _, ok := s.generic[key_dev_value]; ok {
@@ -112,8 +112,8 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
         if key_type_value == "generic" {
             if value, err := params[i].StringValue(); err == nil {
                 key_dev_value := fmt.Sprintf("%v", req.Attributes["dev"])
-                key_baud_value, _ := cast.ToIntE(fmt.Sprintf("%v", req.Attributes["baud"]))
-                key_timeout_value, _  := cast.ToIntE(fmt.Sprintf("%v", req.Attributes["timeout"]))
+                key_baud_value, _ := cast.ToIntE(req.Attributes["baud"])
+                key_timeout_value, _  := cast.ToIntE(req.Attributes["timeout"])
 
                 // initialize the device if it is not initialized already
                 if _, ok := s.generic[key_dev_value]; ok == false {
