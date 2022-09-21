@@ -1,19 +1,14 @@
 # Pre-define Devices
 [[DeviceList]]
-  Name = "Uart-Monitor-Device"
-  ProfileName = "Uart-Monitor-Device"
+  Name = "Uart-Generic-Device"
+  ProfileName = "Uart-Generic-Device"
   Description = "Example of Device UART"
   Labels = [ "device-uart-example" ]
   [DeviceList.Protocols]
     [DeviceList.Protocols.other]
-      Address = "device-uart-monitor-01"
+      Address = "device-uart-generic-01"
       Port = "300"
-[[DeviceList]]
-  Name = "Uart-Transceiver-Device"
-  ProfileName = "Uart-Transceiver-Device"
-  Description = "Example of Device UART"
-  Labels = [ "device-uart-example" ]
-  [DeviceList.Protocols]
-    [DeviceList.Protocols.other]
-      Address = "device-uart-transceiver-01"
-      Port = "300"
+  [[DeviceList.AutoEvents]]
+    Interval = '2s'
+    OnChange = false
+    SourceName = 'Read_Cmd'
