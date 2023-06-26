@@ -10,17 +10,16 @@ require (
 )
 
 require (
-	bitbucket.org/bertimus9/systemstat v0.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/eclipse/paho.mqtt.golang v1.4.2 // indirect
-        github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.1 // indirect
-        github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0 // indirect
-        github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0 // indirect
-        github.com/edgexfoundry/go-mod-registry/v3 v3.0.0 // indirect
-        github.com/edgexfoundry/go-mod-secrets/v3 v3.0.1 // indirect
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.1 // indirect
+	github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0 // indirect
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0 // indirect
+	github.com/edgexfoundry/go-mod-registry/v3 v3.0.0 // indirect
+	github.com/edgexfoundry/go-mod-secrets/v3 v3.0.1 // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
@@ -51,12 +50,9 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/nats-io/nats-server/v2 v2.9.16 // indirect
 	github.com/nats-io/nats.go v1.25.0 // indirect
 	github.com/nats-io/nkeys v0.4.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
-	github.com/pebbe/zmq4 v1.2.7 // indirect
-	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.1.4 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
