@@ -1,0 +1,17 @@
+# Pre-defined devices
+deviceList:
+  - name: "Uart-Generic-Device"
+    profileName: "Uart-Generic-Device"
+    description: "Example of Device UART"
+    labels:
+      - uart
+      - uart-generice-device
+    protocols:
+      UART:
+        deviceName: "/dev/ttyAMA2"
+        baudRate: 115200
+    # autoEvents:
+    #   - Interval: 20s
+    #     OnChange: false
+    #     SourceName: Read_Cmd
+
