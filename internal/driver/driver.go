@@ -22,44 +22,44 @@
 package driver
 
 import (
-    "fmt"
-    "errors"
-    "encoding/hex"
+	"encoding/hex"
+	"errors"
+	"fmt"
 
-    "github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
-    dsModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
-    "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-    "github.com/edgexfoundry/go-mod-core-contracts/v3/models"
-    "github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-    "github.com/spf13/cast"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
+	dsModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+	"github.com/spf13/cast"
 )
 
 type Driver struct {
-    sdk     interfaces.DeviceServiceSDK
-    lc      logger.LoggingClient
-    asyncCh chan<- *dsModels.AsyncValues
-    deviceCh chan<- []dsModels.DiscoveredDevice
-    generic map[string]*UartGeneric
+	sdk      interfaces.DeviceServiceSDK
+	lc       logger.LoggingClient
+	asyncCh  chan<- *dsModels.AsyncValues
+	deviceCh chan<- []dsModels.DiscoveredDevice
+	generic  map[string]*UartGeneric
 }
 
 // Initialize performs protocol-specific initialization for the device
 // service.
-func (s *Driver) Initialize(sdk interfaces.DeviceServiceSDK) (error) {
-    s.sdk = sdk
-    s.lc = sdk.LoggingClient()
-    s.asyncCh = sdk.AsyncValuesChannel()
-    s.deviceCh = sdk.DiscoveredDeviceChannel()
+func (s *Driver) Initialize(sdk interfaces.DeviceServiceSDK) error {
+	s.sdk = sdk
+	s.lc = sdk.LoggingClient()
+	s.asyncCh = sdk.AsyncValuesChannel()
+	s.deviceCh = sdk.DiscoveredDeviceChannel()
 
-	  s.generic = make(map[string]*UartGeneric)
+	s.generic = make(map[string]*UartGeneric)
 
-	  return nil
+	return nil
 }
 
 // Start runs device service startup tasks after the SDK has been completely
 // initialized. This allows device service to safely use DeviceServiceSDK
 // interface features in this function call
 func (s *Driver) Start() error {
-    return nil
+	return nil
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
@@ -159,32 +159,32 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 // the results to the channel which is passed to the implementation via
 // ProtocolDriver.Initialize()
 func (s *Driver) Discover() error {
-    return fmt.Errorf("Discover function is yet to be implemented!")
+	return fmt.Errorf("Discover function is yet to be implemented!")
 }
 
 // ValidateDevice triggers device's protocol properties validation, returns error
 // if validation failed and the incoming device will not be added into EdgeX
 func (s *Driver) ValidateDevice(device models.Device) error {
-    protocol, ok := device.Protocols["UART"]
-    if !ok {
-        return errors.New("Missing 'UART' protocols")
-    }
+	protocol, ok := device.Protocols["UART"]
+	if !ok {
+		return errors.New("Missing 'UART' protocols")
+	}
 
-    deviceName, ok := protocol["deviceName"]
-    if !ok {
-        return errors.New("Missing 'deviceName' information")
-    } else if deviceName == "" {
-        return errors.New("deviceName must not empty")
-    }
+	deviceName, ok := protocol["deviceName"]
+	if !ok {
+		return errors.New("Missing 'deviceName' information")
+	} else if deviceName == "" {
+		return errors.New("deviceName must not empty")
+	}
 
-    baudRate, ok := protocol["baudRate"]
-    if !ok {
-        return errors.New("Missing 'baudRate' information")
-    } else if baudRate == "" {
-        return errors.New("bauidRate must not empty")
-    }
+	baudRate, ok := protocol["baudRate"]
+	if !ok {
+		return errors.New("Missing 'baudRate' information")
+	} else if baudRate == "" {
+		return errors.New("bauidRate must not empty")
+	}
 
-    return nil
+	return nil
 }
 
 // Stop the protocol-specific DS code to shutdown gracefully, or
