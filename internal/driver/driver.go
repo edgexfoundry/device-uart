@@ -25,6 +25,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
 	dsModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
@@ -67,39 +68,49 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
 
 	res = make([]*dsModels.CommandValue, len(reqs))
 
+	var device_name string
+	var baud_rate int
+
+	for i, protocol := range protocols {
+		device_name = fmt.Sprintf("%v", protocol["deviceName"])
+		baud_rate, _ = cast.ToIntE(protocol["baudRate"])
+
+		s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): protocol = %v, device_name = %v, baud_rate = %v", i, device_name, baud_rate))
+	}
+
 	for i, req := range reqs {
 		s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): protocols: %v resource: %v attributes: %v", protocols, req.DeviceResourceName, req.Attributes))
 
 		key_type_value := fmt.Sprintf("%v", req.Attributes["type"])
 
 		if key_type_value == "generic" {
-			key_dev_value := fmt.Sprintf("%v", req.Attributes["dev"])
-
-			key_baud_value, _ := cast.ToIntE(req.Attributes["baud"])
 			key_maxbytes_value, _ := cast.ToIntE(req.Attributes["maxbytes"])
 			key_timeout_value, _ := cast.ToIntE(req.Attributes["timeout"])
 
 			// check device is already initialized
-			if _, ok := s.generic[key_dev_value]; ok {
-				s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Device %v is already initialized with baud - %v, maxbytes - %v, timeout - %v", s.generic[key_dev_value], key_baud_value, key_maxbytes_value, key_timeout_value))
+			if _, ok := s.generic[device_name]; ok {
+				s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Device %v is already initialized with baud - %v, maxbytes - %v, timeout - %v", s.generic[device_name], baud_rate, key_maxbytes_value, key_timeout_value))
 			} else {
 				// initialize device for the first time
-				s.generic[key_dev_value] = NewUartGeneric(key_dev_value, key_baud_value, key_timeout_value)
-				s.generic[key_dev_value].rxbuf = nil
+				s.generic[device_name] = NewUartGeneric(device_name, baud_rate, key_timeout_value)
+				s.generic[device_name].rxbuf = nil
 
-				s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Device %v initialized for the first time with baud - %v, maxbytes - %v, timeout - %v", s.generic[key_dev_value], key_baud_value, key_maxbytes_value, key_timeout_value))
+				s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Device %v initialized for the first time with baud - %v, maxbytes - %v, timeout - %v", s.generic[device_name], baud_rate, key_maxbytes_value, key_timeout_value))
 			}
 
-			if err := s.generic[key_dev_value].GenericUartRead(key_maxbytes_value); err != nil {
+			err := s.generic[device_name].GenericUartRead(key_maxbytes_value)
+			if err == io.EOF {
+				s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): EOF reached"))
+			} else if err != nil {
 				return nil, fmt.Errorf("reading UART failed: %v", err)
 			}
 
-			rxbuf := hex.EncodeToString(s.generic[key_dev_value].rxbuf)
+			rxbuf := hex.EncodeToString(s.generic[device_name].rxbuf)
 			s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Received Data =  %s", rxbuf))
 
 			// Pass the received values to higher layers
 			cv, _ := dsModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeString, rxbuf)
-			s.generic[key_dev_value].rxbuf = nil
+			s.generic[device_name].rxbuf = nil
 			res[i] = cv
 			s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Response = %v", res[i]))
 		}
@@ -115,6 +126,16 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
 func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []dsModels.CommandRequest,
 	params []*dsModels.CommandValue) error {
 
+	var device_name string
+	var baud_rate int
+
+	for i, protocol := range protocols {
+		device_name = fmt.Sprintf("%v", protocol["deviceName"])
+		baud_rate, _ = cast.ToIntE(protocol["baudRate"])
+
+		s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): protocol = %v, device_name = %v, baud_rate = %v", i, device_name, baud_rate))
+	}
+
 	for i, req := range reqs {
 		s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): deviceResourceName = %v", req.DeviceResourceName))
 		s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, req.DeviceResourceName, req.Attributes, params))
@@ -123,13 +144,11 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 
 		if key_type_value == "generic" {
 			if value, err := params[i].StringValue(); err == nil {
-				key_dev_value := fmt.Sprintf("%v", req.Attributes["dev"])
-				key_baud_value, _ := cast.ToIntE(req.Attributes["baud"])
 				key_timeout_value, _ := cast.ToIntE(req.Attributes["timeout"])
 
 				// initialize the device if it is not initialized already
-				if _, ok := s.generic[key_dev_value]; !ok {
-					s.generic[key_dev_value] = NewUartGeneric(key_dev_value, key_baud_value, key_timeout_value)
+				if _, ok := s.generic[device_name]; !ok {
+					s.generic[device_name] = NewUartGeneric(device_name, baud_rate, key_timeout_value)
 				}
 
 				// decode the string in hex format
@@ -139,7 +158,7 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 				}
 
 				//Write to UART device
-				txlen, err := s.generic[key_dev_value].GenericUartWrite(txbuf)
+				txlen, err := s.generic[device_name].GenericUartWrite(txbuf)
 
 				if err == nil {
 					s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): tx length = %v", txlen))
