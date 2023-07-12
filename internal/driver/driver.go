@@ -67,41 +67,48 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
 
 	res = make([]*dsModels.CommandValue, len(reqs))
 
+	var deviceLocation string
+	var baudRate int
+
+	for i, protocol := range protocols {
+		deviceLocation = fmt.Sprintf("%v", protocol["deviceLocation"])
+		baudRate, _ = cast.ToIntE(protocol["baudRate"])
+
+		s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): protocol = %v, device location = %v, baud rate = %v", i, deviceLocation, baudRate))
+	}
+
 	for i, req := range reqs {
-		s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): protocols: %v resource: %v attributes: %v", protocols, req.DeviceResourceName, req.Attributes))
+		s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): protocols: %v resource: %v attributes: %v", protocols, req.DeviceResourceName, req.Attributes))
 
 		key_type_value := fmt.Sprintf("%v", req.Attributes["type"])
 
 		if key_type_value == "generic" {
-			key_dev_value := fmt.Sprintf("%v", req.Attributes["dev"])
-
-			key_baud_value, _ := cast.ToIntE(req.Attributes["baud"])
 			key_maxbytes_value, _ := cast.ToIntE(req.Attributes["maxbytes"])
 			key_timeout_value, _ := cast.ToIntE(req.Attributes["timeout"])
 
 			// check device is already initialized
-			if _, ok := s.generic[key_dev_value]; ok {
-				s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Device %v is already initialized with baud - %v, maxbytes - %v, timeout - %v", s.generic[key_dev_value], key_baud_value, key_maxbytes_value, key_timeout_value))
+			if _, ok := s.generic[deviceLocation]; ok {
+				s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): Device %v is already initialized with baud - %v, maxbytes - %v, timeout - %v", s.generic[deviceLocation], baudRate, key_maxbytes_value, key_timeout_value))
 			} else {
 				// initialize device for the first time
-				s.generic[key_dev_value] = NewUartGeneric(key_dev_value, key_baud_value, key_timeout_value)
-				s.generic[key_dev_value].rxbuf = nil
+				s.generic[deviceLocation] = NewUartGeneric(deviceLocation, baudRate, key_timeout_value)
+				s.generic[deviceLocation].rxbuf = nil
 
-				s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Device %v initialized for the first time with baud - %v, maxbytes - %v, timeout - %v", s.generic[key_dev_value], key_baud_value, key_maxbytes_value, key_timeout_value))
+				s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): Device %v initialized for the first time with baud - %v, maxbytes - %v, timeout - %v", s.generic[deviceLocation], baudRate, key_maxbytes_value, key_timeout_value))
 			}
 
-			if err := s.generic[key_dev_value].GenericUartRead(key_maxbytes_value); err != nil {
-				return nil, fmt.Errorf("reading UART failed: %v", err)
+			if err := s.generic[deviceLocation].GenericUartRead(key_maxbytes_value); err != nil {
+				return nil, fmt.Errorf("Driver.HandleReadCommands(): Reading UART failed: %v", err)
 			}
 
-			rxbuf := hex.EncodeToString(s.generic[key_dev_value].rxbuf)
-			s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Received Data =  %s", rxbuf))
+			rxbuf := hex.EncodeToString(s.generic[deviceLocation].rxbuf)
+			s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): Received Data =  %s", rxbuf))
 
 			// Pass the received values to higher layers
 			cv, _ := dsModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeString, rxbuf)
-			s.generic[key_dev_value].rxbuf = nil
+			s.generic[deviceLocation].rxbuf = nil
 			res[i] = cv
-			s.lc.Infof(fmt.Sprintf("Driver.HandleReadCommands(): Response = %v", res[i]))
+			s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): Response = %v", res[i]))
 		}
 	}
 
@@ -115,21 +122,29 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
 func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []dsModels.CommandRequest,
 	params []*dsModels.CommandValue) error {
 
+	var deviceLocation string
+	var baudRate int
+
+	for i, protocol := range protocols {
+		deviceLocation = fmt.Sprintf("%v", protocol["deviceLocation"])
+		baudRate, _ = cast.ToIntE(protocol["baudRate"])
+
+		s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): protocol = %v, device location = %v, baud rate = %v", i, deviceLocation, baudRate))
+	}
+
 	for i, req := range reqs {
-		s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): deviceResourceName = %v", req.DeviceResourceName))
-		s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, req.DeviceResourceName, req.Attributes, params))
+		s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): deviceResourceName = %v", req.DeviceResourceName))
+		s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, req.DeviceResourceName, req.Attributes, params))
 
 		key_type_value := fmt.Sprintf("%v", req.Attributes["type"])
 
 		if key_type_value == "generic" {
 			if value, err := params[i].StringValue(); err == nil {
-				key_dev_value := fmt.Sprintf("%v", req.Attributes["dev"])
-				key_baud_value, _ := cast.ToIntE(req.Attributes["baud"])
 				key_timeout_value, _ := cast.ToIntE(req.Attributes["timeout"])
 
 				// initialize the device if it is not initialized already
-				if _, ok := s.generic[key_dev_value]; !ok {
-					s.generic[key_dev_value] = NewUartGeneric(key_dev_value, key_baud_value, key_timeout_value)
+				if _, ok := s.generic[deviceLocation]; !ok {
+					s.generic[deviceLocation] = NewUartGeneric(deviceLocation, baudRate, key_timeout_value)
 				}
 
 				// decode the string in hex format
@@ -139,10 +154,10 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 				}
 
 				//Write to UART device
-				txlen, err := s.generic[key_dev_value].GenericUartWrite(txbuf)
+				txlen, err := s.generic[deviceLocation].GenericUartWrite(txbuf)
 
 				if err == nil {
-					s.lc.Infof(fmt.Sprintf("Driver.HandleWriteCommands(): tx length = %v", txlen))
+					s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): tx length = %v", txlen))
 				}
 
 				return err
@@ -170,18 +185,18 @@ func (s *Driver) ValidateDevice(device models.Device) error {
 		return errors.New("Missing 'UART' protocols")
 	}
 
-	deviceName, ok := protocol["deviceName"]
+	deviceLocation, ok := protocol["deviceLocation"]
 	if !ok {
-		return errors.New("Missing 'deviceName' information")
-	} else if deviceName == "" {
-		return errors.New("deviceName must not empty")
+		return errors.New("Missing 'deviceLocation' information")
+	} else if deviceLocation == "" {
+		return errors.New("deviceLocation must not empty")
 	}
 
 	baudRate, ok := protocol["baudRate"]
 	if !ok {
 		return errors.New("Missing 'baudRate' information")
 	} else if baudRate == "" {
-		return errors.New("bauidRate must not empty")
+		return errors.New("baudRate must not empty")
 	}
 
 	return nil
