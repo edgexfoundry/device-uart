@@ -8,7 +8,7 @@ deviceList:
       - uart-generice-device
     protocols:
       UART:
-        deviceName: "/dev/ttyAMA2"
+        deviceLocation: "/dev/ttyAMA2"
         baudRate: 115200
     # autoEvents:
     #   - Interval: 20s
