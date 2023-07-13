@@ -1,5 +1,6 @@
 #
 # Copyright (c) 2022 Jiangxing Intelligence
+# Copyright (c) 20223 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +18,7 @@
 ARG BASE=golang:1.20-alpine3.17
 FROM ${BASE} AS builder
 
-ARG ALPINE_PKG_BASE="make git openssh-client gcc libc-dev zeromq-dev libsodium-dev"
+ARG ALPINE_PKG_BASE="make git openssh-client"
 ARG ALPINE_PKG_EXTRA=""
 ARG ADD_BUILD_TAGS=""
 
@@ -44,7 +45,7 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2021: Jiangxing Intelligence'
 
 # dumb-init needed for injected secure bootstrapping entry point script when run in secure mode.
-RUN apk add --update --no-cache zeromq dumb-init
+RUN apk add --update --no-cache dumb-init
 
 WORKDIR /
 COPY --from=builder /device-uart/Attribution.txt /
