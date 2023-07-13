@@ -7,20 +7,52 @@ description: "Example of Device-Uart"
 
 deviceResources:
 -
-    name: "Read_UART"
+    name: "Read_String"
     isHidden: false
-    description: "used to read from the UART device"
+    description: "Read string from the UART device"
     attributes: { type: "generic", maxbytes: 160, timeout: 1}
     properties:
         valueType: "String"
         readWrite: "R"
 -
-    name: "Write_UART"
+    name: "Read_Int8"
     isHidden: false
-    description: "used to write to the UART device"
+    description: "Read Int8 from the UART device"
+    attributes: { type: "generic", maxbytes: 160, timeout: 1}
+    properties:
+        valueType: "Int8"
+        readWrite: "R"
+-
+    name: "Read_Int16"
+    isHidden: false
+    description: "Read Int16 from the UART device"
+    attributes: { type: "generic", maxbytes: 160, timeout: 1}
+    properties:
+        valueType: "Int16"
+        readWrite: "R"
+-
+    name: "Write_String"
+    isHidden: false
+    description: "Write string value to the UART device"
     attributes: { type: "generic", timeout: 1}
     properties:
         valueType: "String"
+        readWrite: "W"
+-
+    name: "Write_Int8"
+    isHidden: false
+    description: "Write Int8 value to the UART device"
+    attributes: { type: "generic", timeout: 1}
+    properties:
+        valueType: "Int8"
+        readWrite: "W"
+-
+    name: "Write_Int16"
+    isHidden: false
+    description: "Write Int16 value to the UART device"
+    attributes: { type: "generic", timeout: 1}
+    properties:
+        valueType: "Int16"
         readWrite: "W"
 
 deviceCommands:
@@ -28,4 +60,4 @@ deviceCommands:
   name: "Read_Cmd"
   readWrite: "R"
   resourceOperations:
-  - { deviceResource: "Read_UART" }
+  - { deviceResource: "Read_String" }

@@ -20,6 +20,7 @@
 package driver
 
 import (
+	"io"
 	"log"
 	"time"
 
@@ -67,6 +68,8 @@ func (dev *UartGeneric) GenericUartRead(maxbytes int) error {
 	// are read or EOF is reached
 	readCount := (maxbytes / 16) + 1
 
+	log.Printf("GenericUartRead(): readCount = %v", readCount)
+
 	// We don't want next auto-event to interrupt when the current one is
 	// still executing
 	if dev.portStatus {
@@ -83,7 +86,11 @@ func (dev *UartGeneric) GenericUartRead(maxbytes int) error {
 		lens, err := dev.conn.Read(b)
 
 		if err != nil {
-			log.Printf("GenericUartRead(): Error = %v", err)
+			if err == io.EOF {
+				log.Printf("GenericUartRead(): %v - Finished reading!", err)
+				break
+			}
+			log.Printf("GenericUartRead(): Exit - Error = %v", err)
 
 			dev.portStatus = false
 
@@ -104,7 +111,7 @@ func (dev *UartGeneric) GenericUartRead(maxbytes int) error {
 
 	dev.portStatus = false
 	dev.conn.Flush()
-	log.Printf("Exit, END GenericUartRead()")
+	log.Printf("GenericUartRead(): Exit - Success")
 
 	return nil
 }
