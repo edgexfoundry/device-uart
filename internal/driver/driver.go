@@ -67,7 +67,8 @@ func (s *Driver) Start() error {
 // HandleReadCommands triggers a protocol Read operation for the specified device.
 func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
 
-	castError := "Failed to parse %v reading, %v"
+	const castError = "Failed to parse %s reading: %v"
+	const createCommandValueError = "Failed to create %s reading: %v"
 
 	res = make([]*dsModels.CommandValue, len(reqs))
 
@@ -78,15 +79,15 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
 		deviceLocation = fmt.Sprintf("%v", protocol["deviceLocation"])
 		baudRate, _ = cast.ToIntE(protocol["baudRate"])
 
-		s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): protocol = %v, device location = %v, baud rate = %v", i, deviceLocation, baudRate))
+		s.lc.Debugf("Driver.HandleReadCommands(): protocol = %v, device location = %v, baud rate = %v", i, deviceLocation, baudRate)
 	}
 
 	for i, req := range reqs {
-		s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): protocols: %v resource: %v attributes: %v", protocols, req.DeviceResourceName, req.Attributes))
+		s.lc.Debugf("Driver.HandleReadCommands(): protocols: %v resource: %v attributes: %v", protocols, req.DeviceResourceName, req.Attributes)
 
 		// Get the value type from device profile
 		valueType := req.Type
-		s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): value type = %v", valueType))
+		s.lc.Debugf("Driver.HandleReadCommands(): value type = %v", valueType)
 
 		key_type_value := fmt.Sprintf("%v", req.Attributes["type"])
 
@@ -96,48 +97,56 @@ func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]mode
 
 			// check device is already initialized
 			if _, ok := s.generic[deviceLocation]; ok {
-				s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): Device %v is already initialized with baud - %v, maxbytes - %v, timeout - %v", s.generic[deviceLocation], baudRate, key_maxbytes_value, key_timeout_value))
+				s.lc.Debugf("Driver.HandleReadCommands(): Device %v is already initialized with baud - %v, maxbytes - %v, timeout - %v", s.generic[deviceLocation], baudRate, key_maxbytes_value, key_timeout_value)
 			} else {
 				// initialize device for the first time
-				s.generic[deviceLocation] = NewUartGeneric(deviceLocation, baudRate, key_timeout_value)
+				s.generic[deviceLocation] = NewUartGeneric(deviceLocation, baudRate, key_timeout_value, s.lc)
 				s.generic[deviceLocation].rxbuf = nil
 
-				s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): Device %v initialized for the first time with baud - %v, maxbytes - %v, timeout - %v", s.generic[deviceLocation], baudRate, key_maxbytes_value, key_timeout_value))
+				s.lc.Debugf("Driver.HandleReadCommands(): Device %v initialized for the first time with baud - %v, maxbytes - %v, timeout - %v", s.generic[deviceLocation], baudRate, key_maxbytes_value, key_timeout_value)
 			}
 
-			if err := s.generic[deviceLocation].GenericUartRead(key_maxbytes_value); err != nil {
+			if err := s.generic[deviceLocation].GenericUartRead(key_maxbytes_value, s.lc); err != nil {
 				return nil, fmt.Errorf("Driver.HandleReadCommands(): Reading UART failed: %v", err)
 			}
 
 			rxbuf := hex.EncodeToString(s.generic[deviceLocation].rxbuf)
-			s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): Received Data = %v", rxbuf))
+			s.lc.Debugf("Driver.HandleReadCommands(): Received Data = %s", rxbuf)
 
 			// Pass the received values to higher layers
 			// Handle data based on the value type mentioned in device profile
 			var cv *dsModels.CommandValue
 			switch valueType {
 			case common.ValueTypeInt8:
-				value, _ := strconv.ParseInt(rxbuf, 16, 8)
-				cv, err = dsModels.NewCommandValue(req.DeviceResourceName, valueType, int8(value))
+				value, err := strconv.ParseInt(rxbuf, 16, 8)
 				if err != nil {
 					return nil, fmt.Errorf(castError, req.DeviceResourceName, err)
 				}
+				cv, err = dsModels.NewCommandValue(req.DeviceResourceName, valueType, int8(value))
+				if err != nil {
+					return nil, fmt.Errorf(createCommandValueError, req.DeviceResourceName, err)
+				}
 			case common.ValueTypeInt16:
-				value, _ := strconv.ParseInt(rxbuf, 16, 16)
-				cv, err = dsModels.NewCommandValue(req.DeviceResourceName, valueType, int16(value))
+				value, err := strconv.ParseInt(rxbuf, 16, 16)
 				if err != nil {
 					return nil, fmt.Errorf(castError, req.DeviceResourceName, err)
+				}
+				cv, err = dsModels.NewCommandValue(req.DeviceResourceName, valueType, int16(value))
+				if err != nil {
+					return nil, fmt.Errorf(createCommandValueError, req.DeviceResourceName, err)
 				}
 			case common.ValueTypeString:
 				cv, err = dsModels.NewCommandValue(req.DeviceResourceName, valueType, rxbuf)
 				if err != nil {
-					return nil, fmt.Errorf(castError, req.DeviceResourceName, err)
+					return nil, fmt.Errorf(createCommandValueError, req.DeviceResourceName, err)
 				}
+			default:
+				return nil, fmt.Errorf("Driver.HandleReadCommands(): Unsupported value type: %v", valueType)
 			}
 
 			s.generic[deviceLocation].rxbuf = nil
 			res[i] = cv
-			s.lc.Debugf(fmt.Sprintf("Driver.HandleReadCommands(): Response = %v", res[i]))
+			s.lc.Debugf("Driver.HandleReadCommands(): Response = %v", res[i])
 		}
 	}
 
@@ -158,16 +167,16 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 		deviceLocation = fmt.Sprintf("%v", protocol["deviceLocation"])
 		baudRate, _ = cast.ToIntE(protocol["baudRate"])
 
-		s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): protocol = %v, device location = %v, baud rate = %v", i, deviceLocation, baudRate))
+		s.lc.Debugf("Driver.HandleWriteCommands(): protocol = %v, device location = %v, baud rate = %v", i, deviceLocation, baudRate)
 	}
 
 	for i, req := range reqs {
-		s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): deviceResourceName = %v", req.DeviceResourceName))
-		s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, req.DeviceResourceName, req.Attributes, params))
+		s.lc.Debugf("Driver.HandleWriteCommands(): deviceResourceName = %v", req.DeviceResourceName)
+		s.lc.Debugf("Driver.HandleWriteCommands(): protocols: %v, resource: %v, attribute: %v, parameters: %v", protocols, req.DeviceResourceName, req.Attributes, params)
 
 		// Get the value type from device profile
 		valueType := req.Type
-		s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): value type = %v", valueType))
+		s.lc.Debugf("Driver.HandleWriteCommands(): value type = %v", valueType)
 
 		var value interface{}
 		var err error
@@ -177,55 +186,61 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 			switch valueType {
 			case common.ValueTypeInt8:
 				value, err = params[i].Int8Value()
-				s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): Int8 = %v", value))
 			case common.ValueTypeInt16:
 				value, err = params[i].Int16Value()
-				s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): Int16 = %v", value))
 			case common.ValueTypeString:
 				value, err = params[i].StringValue()
-				s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): String = %v", value))
+			default:
+				return fmt.Errorf("Driver.HandleWriteCommands(): Unsupported value type: %v", valueType)
 			}
+
+			if err != nil {
+				return err
+			}
+
+			s.lc.Debugf("Driver.HandleWriteCommands(): %s= %v", valueType, value)
+
+			key_timeout_value, err := cast.ToIntE(req.Attributes["timeout"])
+			if err != nil {
+				return err
+			}
+
+			// initialize the device if it is not initialized already
+			if _, ok := s.generic[deviceLocation]; !ok {
+				s.generic[deviceLocation] = NewUartGeneric(deviceLocation, baudRate, key_timeout_value, s.lc)
+			}
+
+			// Pass the values to the UART end device
+			// Handle data based on the value type mentioned in device profile
+			var txbuf []byte
+			switch valueType {
+			case common.ValueTypeInt8:
+				txbuf = make([]byte, 1)
+				txbuf[0] = byte(value.(int8))
+			case common.ValueTypeInt16:
+				txbuf = make([]byte, 2)
+				// binary.LittleEndian.PutUint16(txbuf, uint16(value.(int16)))
+				binary.BigEndian.PutUint16(txbuf, uint16(value.(int16)))
+			case common.ValueTypeString:
+				// Decode the string to hex format
+				txbuf, err = hex.DecodeString(value.(string))
+				if err != nil {
+					return fmt.Errorf("Driver.HandleWriteCommands(): String decode failed: %v", err)
+				}
+			default:
+				return fmt.Errorf("Driver.HandleWriteCommands(): Unsupported value type: %v", valueType)
+			}
+
+			s.lc.Debugf("Driver.HandleWriteCommands(): txbuf = %v", txbuf)
+
+			//Write to UART device
+			txlen, err := s.generic[deviceLocation].GenericUartWrite(txbuf, s.lc)
 
 			if err == nil {
-				key_timeout_value, _ := cast.ToIntE(req.Attributes["timeout"])
-
-				// initialize the device if it is not initialized already
-				if _, ok := s.generic[deviceLocation]; !ok {
-					s.generic[deviceLocation] = NewUartGeneric(deviceLocation, baudRate, key_timeout_value)
-				}
-
-				// Pass the values to the UART end device
-				// Handle data based on the value type mentioned in device profile
-				var txbuf []byte
-				switch valueType {
-				case common.ValueTypeInt8:
-					txbuf = make([]byte, 1)
-					txbuf[0] = byte(value.(int8))
-				case common.ValueTypeInt16:
-					txbuf = make([]byte, 2)
-					// binary.LittleEndian.PutUint16(txbuf, uint16(value.(int16)))
-					binary.BigEndian.PutUint16(txbuf, uint16(value.(int16)))
-				case common.ValueTypeString:
-					// Decode the string to hex format
-					txbuf, err = hex.DecodeString(value.(string))
-					if err != nil {
-						return fmt.Errorf("Driver.HandleWriteCommands(): String decode failed: %v", err)
-					}
-				}
-
-				s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): txbuf = %v", txbuf))
-
-				//Write to UART device
-				txlen, err := s.generic[deviceLocation].GenericUartWrite(txbuf)
-
-				if err == nil {
-					s.lc.Debugf(fmt.Sprintf("Driver.HandleWriteCommands(): tx length = %v", txlen))
-				}
-
-				return err
-			} else {
-				return err
+				s.lc.Debugf("Driver.HandleWriteCommands(): tx length = %v", txlen)
 			}
+
+			return err
 		}
 	}
 
