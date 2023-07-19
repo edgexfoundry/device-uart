@@ -7,25 +7,26 @@ description: "Example of Device-Uart"
 
 deviceResources:
 -
-    name: "Read_UART"
+    name: "String"
     isHidden: false
-    description: "used to read from the UART device"
+    description: "Read/Write string from/to the UART device"
     attributes: { type: "generic", maxbytes: 160, timeout: 1}
     properties:
         valueType: "String"
-        readWrite: "R"
+        readWrite: "RW"
 -
-    name: "Write_UART"
+    name: "Int8"
     isHidden: false
-    description: "used to write to the UART device"
-    attributes: { type: "generic", timeout: 1}
+    description: "Read/Write int8 from/to the UART device"
+    attributes: { type: "generic", maxbytes: 160, timeout: 1}
     properties:
-        valueType: "String"
-        readWrite: "W"
-
-deviceCommands:
+        valueType: "Int8"
+        readWrite: "RW"
 -
-  name: "Read_Cmd"
-  readWrite: "R"
-  resourceOperations:
-  - { deviceResource: "Read_UART" }
+    name: "Int16"
+    isHidden: false
+    description: "Read/Write int16 from/to the UART devic"
+    attributes: { type: "generic", maxbytes: 160, timeout: 1}
+    properties:
+        valueType: "Int16"
+        readWrite: "RW"

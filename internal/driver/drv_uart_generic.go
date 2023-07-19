@@ -20,9 +20,11 @@
 package driver
 
 import (
+	"io"
 	"log"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/tarm/serial"
 )
 
@@ -43,7 +45,7 @@ type UartGeneric struct {
 // NewUartGeneric is a function
 // takes device name and baud rate as arguments and
 // returns a pointer to UartGeneric structure
-func NewUartGeneric(dev string, baud int, timeout int) *UartGeneric {
+func NewUartGeneric(dev string, baud int, timeout int, lc logger.LoggingClient) *UartGeneric {
 	config := &serial.Config{
 		Name:        dev,
 		Baud:        baud,
@@ -53,13 +55,13 @@ func NewUartGeneric(dev string, baud int, timeout int) *UartGeneric {
 
 	conn, err := serial.OpenPort(config)
 	if err != nil {
-		log.Printf("GenericUartRead(): Open serial %s fail", config.Name)
+		lc.Errorf("NewUartGeneric(): Open serial %s failed: %v", config.Name, err)
 	}
 	return &UartGeneric{config: config, conn: conn, enable: true, portStatus: false}
 }
 
 // GenericUartRead method
-func (dev *UartGeneric) GenericUartRead(maxbytes int) error {
+func (dev *UartGeneric) GenericUartRead(maxbytes int, lc logger.LoggingClient) error {
 	var buf []byte
 
 	// GO uart packages read a maximum of 16 bytes in a single shot
@@ -67,10 +69,12 @@ func (dev *UartGeneric) GenericUartRead(maxbytes int) error {
 	// are read or EOF is reached
 	readCount := (maxbytes / 16) + 1
 
+	lc.Debugf("GenericUartRead(): readCount = %v", readCount)
+
 	// We don't want next auto-event to interrupt when the current one is
 	// still executing
 	if dev.portStatus {
-		log.Printf("Exit GenericUartRead(): Device busy..Read request dropped for %s", dev.config.Name)
+		lc.Errorf("GenericUartRead(): Exit - Device busy... Read request dropped for %s", dev.config.Name)
 		return nil
 	}
 
@@ -83,7 +87,11 @@ func (dev *UartGeneric) GenericUartRead(maxbytes int) error {
 		lens, err := dev.conn.Read(b)
 
 		if err != nil {
-			log.Printf("GenericUartRead(): Error = %v", err)
+			if err == io.EOF {
+				lc.Debugf("GenericUartRead(): %v - Finished reading!", err)
+				break
+			}
+			lc.Errorf("GenericUartRead(): Exit - Error = %v", err)
 
 			dev.portStatus = false
 
@@ -92,25 +100,25 @@ func (dev *UartGeneric) GenericUartRead(maxbytes int) error {
 			return err
 		}
 
-		log.Printf("GenericUartRead(): Number of bytes read = %v, buf = %s", lens, b)
+		lc.Debugf("GenericUartRead(): Number of bytes read = %v, buf = %s", lens, b)
 
 		// Copy the content of buf to device rxbuf
 		buf = append(buf, b[:lens]...)
 
 		dev.rxbuf = append(dev.rxbuf, buf[:]...)
-		log.Printf("GenericUartRead(): dev.rxbuf = %s", dev.rxbuf)
+		lc.Debugf("GenericUartRead(): dev.rxbuf = %s", dev.rxbuf)
 		buf = nil
 	}
 
 	dev.portStatus = false
 	dev.conn.Flush()
-	log.Printf("Exit, END GenericUartRead()")
+	lc.Debugf("GenericUartRead(): Exit - Success")
 
 	return nil
 }
 
 // GenericUartWrite method
-func (dev *UartGeneric) GenericUartWrite(txbuf []byte) (int, error) {
+func (dev *UartGeneric) GenericUartWrite(txbuf []byte, lc logger.LoggingClient) (int, error) {
 
 	dev.conn.Flush()
 
@@ -120,7 +128,7 @@ func (dev *UartGeneric) GenericUartWrite(txbuf []byte) (int, error) {
 		return 0, err
 	}
 
-	log.Printf("GenericUartWrite(): Number of bytes transmitted = %d\n", length)
+	lc.Debugf("GenericUartWrite(): Number of bytes transmitted = %d\n", length)
 
 	return length, err
 }
