@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Maintain dependencies for Go modules
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    ignore:
+      - dependency-name: "github.com/edgexfoundry/go-mod-core-contracts/v3"
+        # Included when device-sdk-go is updated
+      - dependency-name: "github.com/edgexfoundry/go-mod-messaging/v3"
+        # Included when device-sdk-go is updated
+      - dependency-name: "github.com/edgexfoundry/go-mod-registry/v3"
+        # Included when device-sdk-go is updated
+      - dependency-name: "github.com/edgexfoundry/go-mod-secrets/v3"
+        # Included when device-sdk-go is updated
+      - dependency-name: "github.com/edgexfoundry/go-mod-bootstrap/v3"
+        # Included when device-sdk-go is updated      
+
