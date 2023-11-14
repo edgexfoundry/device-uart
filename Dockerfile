@@ -46,6 +46,8 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
 
 # dumb-init needed for injected secure bootstrapping entry point script when run in secure mode.
 RUN apk add --update --no-cache dumb-init
+# Ensure using latest versions of all installed packages to avoid any recent CVEs
+RUN apk --no-cache upgrade
 
 WORKDIR /
 COPY --from=builder /device-uart/Attribution.txt /
