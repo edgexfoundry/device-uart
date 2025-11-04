@@ -17,5 +17,5 @@
 edgeXBuildGoApp (
     project: 'device-uart',
     buildSnap: false,
-    goVersion: '1.23'
+    goVersion: '1.25'
 )

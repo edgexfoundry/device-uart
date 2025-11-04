@@ -67,8 +67,8 @@ func (s *Driver) Start() error {
 // HandleReadCommands triggers a protocol Read operation for the specified device.
 func (s *Driver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
 
-	const castError = "Failed to parse %s reading: %v"
-	const createCommandValueError = "Failed to create %s reading: %v"
+	const castError = "failed to parse %s reading: %v"
+	const createCommandValueError = "failed to create %s reading: %v"
 
 	res = make([]*dsModels.CommandValue, len(reqs))
 
@@ -219,8 +219,7 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 				txbuf[0] = byte(value.(int8))
 			case common.ValueTypeInt16:
 				txbuf = make([]byte, 2)
-				// binary.LittleEndian.PutUint16(txbuf, uint16(value.(int16)))
-				binary.BigEndian.PutUint16(txbuf, uint16(value.(int16)))
+				binary.BigEndian.PutUint16(txbuf, uint16(value.(int16))) // #nosec G115
 			case common.ValueTypeString:
 				// Decode the string to hex format
 				txbuf, err = hex.DecodeString(value.(string))
@@ -251,7 +250,7 @@ func (s *Driver) HandleWriteCommands(deviceName string, protocols map[string]mod
 // the results to the channel which is passed to the implementation via
 // ProtocolDriver.Initialize()
 func (s *Driver) Discover() error {
-	return fmt.Errorf("Discover function is yet to be implemented!")
+	return fmt.Errorf("discover function is yet to be implemented")
 }
 
 // ValidateDevice triggers device's protocol properties validation, returns error
@@ -259,19 +258,19 @@ func (s *Driver) Discover() error {
 func (s *Driver) ValidateDevice(device models.Device) error {
 	protocol, ok := device.Protocols["UART"]
 	if !ok {
-		return errors.New("Missing 'UART' protocols")
+		return errors.New("missing 'UART' protocols")
 	}
 
 	deviceLocation, ok := protocol["deviceLocation"]
 	if !ok {
-		return errors.New("Missing 'deviceLocation' information")
+		return errors.New("missing 'deviceLocation' information")
 	} else if deviceLocation == "" {
 		return errors.New("deviceLocation must not empty")
 	}
 
 	baudRate, ok := protocol["baudRate"]
 	if !ok {
-		return errors.New("Missing 'baudRate' information")
+		return errors.New("missing 'baudRate' information")
 	} else if baudRate == "" {
 		return errors.New("baudRate must not empty")
 	}
