@@ -3,7 +3,7 @@ module github.com/edgexfoundry/device-uart
 go 1.25.0
 
 require (
-	github.com/edgexfoundry/device-sdk-go/v4 v4.1.0-dev.42
+	github.com/edgexfoundry/device-sdk-go/v4 v4.1.0-dev.43
 	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.21
 	github.com/spf13/cast v1.10.0
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
@@ -15,7 +15,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
-	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.42 // indirect
+	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.43 // indirect
 	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.17 // indirect
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.18 // indirect
 	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.7 // indirect
